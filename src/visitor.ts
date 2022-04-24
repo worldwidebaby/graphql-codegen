@@ -197,11 +197,11 @@ export const request${operationName} = ${this._pureComment}(variables: ${operati
 
     if (operationType === 'Query') {
       return `
-const fetch${operationName} = ${this._pureComment}(variables: ${operationVariablesTypes} = {} as ${operationVariablesTypes}) => {
-  return gqlRequest<${operationResultType}>(${documentVariableName}, variables);
+const fetch${operationName} = ${this._pureComment}(doc: string, variables: ${operationVariablesTypes} = {} as ${operationVariablesTypes}) => {
+  return gqlRequest<${operationResultType}>(doc, variables);
 };
 export const useSWR${operationName} = ${this._pureComment}(variables: ${operationVariablesTypes} = {} as ${operationVariablesTypes}, config: Partial<SWRConfiguration<${operationResultType}, Error, BareFetcher<${operationResultType}>>> = {}) => {
-  return useSWR<${operationResultType}, Error>(variables, fetch${operationName}, config);
+  return useSWR<${operationResultType}, Error>(variables === null ? null : [${documentVariableName}, variables], fetch${operationName}, config);
 };
 `;
     }
