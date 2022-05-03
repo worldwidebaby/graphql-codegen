@@ -38,7 +38,8 @@ export class MNTMGraphQLVisitor extends ClientSideBaseVisitor<MNTMGraphQLRawPlug
     super(schema, fragments, rawConfig, {
       withHooks: getConfigValue(rawConfig.withHooks, true),
       withRequests: getConfigValue(rawConfig.withRequests, false),
-      withSWR: getConfigValue(rawConfig.withSWR, false)
+      withSWR: getConfigValue(rawConfig.withSWR, false),
+      suspense: getConfigValue(rawConfig.suspense, false),
     });
 
     autoBind(this);
@@ -192,16 +193,21 @@ export const request${operationName} = ${this._pureComment}(variables: ${operati
     operationResultType: string,
     operationVariablesTypes: string
   ): string {
+    const enableSuspense = this.config.suspense
     const operationType = this._resolveType(rawOperationType);
     const operationName = this._resolveName(operationType, node.name?.value);
 
     if (operationType === 'Query') {
+      const returnType = enableSuspense
+        ? `Required<SWRResponse<${operationResultType}>>`
+        : `SWRResponse<${operationResultType}>`
+
       return `
 const fetch${operationName} = ${this._pureComment}(doc: string, variables: ${operationVariablesTypes} = {} as ${operationVariablesTypes}) => {
   return gqlRequest<${operationResultType}>(doc, variables);
 };
-export const useSWR${operationName} = ${this._pureComment}(variables: ${operationVariablesTypes} = {} as ${operationVariablesTypes}, config: Partial<SWRConfiguration<${operationResultType}, Error, BareFetcher<${operationResultType}>>> = {}) => {
-  return useSWR<${operationResultType}, Error>(variables === null ? null : [${documentVariableName}, variables], fetch${operationName}, config);
+export const useSWR${operationName} = ${this._pureComment}(variables: ${operationVariablesTypes} | null = {} as ${operationVariablesTypes}, config: Partial<SWRConfiguration<${operationResultType}, Error, BareFetcher<${operationResultType}>>> = {}) => {
+  return useSWR<${operationResultType}, Error>(variables ? [${documentVariableName}, variables] : null, fetch${operationName}, config) as ${returnType}
 };
 `;
     }
